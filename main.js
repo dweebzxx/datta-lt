@@ -886,18 +886,27 @@ class Visualizer {
 
         // Inject Custom Titles if they exist in UI but not fully in option yet (though generateOption should handle it)
         if(hasCustomTitle) {
-             const titleTextStyle = { color: this.colorManager.getTextColor(), fontSize: 18, fontWeight: 'bold' };
-             const subTitleTextStyle = { color: chroma(this.colorManager.getTextColor()).alpha(0.7).css(), fontSize: 14, fontWeight: '600' };
+             const titleTextStyle = { color: this.colorManager.getTextColor(), fontSize: config.titleFontSize || 18, fontWeight: 'bold' };
+             const subTitleTextStyle = { color: chroma(this.colorManager.getTextColor()).alpha(0.7).css(), fontSize: config.subtitleFontSize || 14, fontWeight: '600' };
+             const baseTop = (option.title && option.title.top !== undefined) ? option.title.top : 10;
+             const adjustedTop = baseTop + (config.titleTopOffset || 0);
              option.title = {
+                 ...(option.title || {}),
                  text: config.customTitle || displayTitle,
                  subtext: config.customSubtitle || '',
-                 left: 'center',
-                 textStyle: titleTextStyle,
-                 subtextStyle: subTitleTextStyle
+                 left: config.titleLeft || 'center',
+                 top: adjustedTop,
+                 textStyle: { ...titleTextStyle, ...(option.title ? option.title.textStyle : {}) },
+                 subtextStyle: { ...subTitleTextStyle, ...(option.title ? option.title.subtextStyle : {}) }
              };
-            option.title.top = option.title.top || 10;
-            if (option.legend) option.legend.top = hasCustomTitle ? 50 : option.legend.top;
-            if (option.grid) option.grid.top = hasCustomTitle ? 90 : option.grid.top;
+            if (option.legend) {
+                const baseLegendTop = option.legend.top ?? 20;
+                option.legend.top = hasCustomTitle ? Math.max(baseLegendTop, adjustedTop + 40) : baseLegendTop;
+            }
+            if (option.grid && hasCustomTitle) {
+                const baseGridTop = option.grid.top ?? 60;
+                option.grid.top = Math.max(baseGridTop, adjustedTop + 70);
+            }
         }
 
         this.chartInstance.setOption(option);
@@ -1324,8 +1333,14 @@ class Visualizer {
         const gridColor = this.colorManager.getGridColor();
         const animation = { universalTransition: true, animationDuration: 500 };
         const palette = this.colorManager.getPalette(10); // Default palette size
-        const axisLabelStyle = { color: textColor, fontSize: 13, fontWeight: 'bold' };
-        const axisNameStyle = { color: textColor, fontSize: 14, fontWeight: 'bold' };
+        const axisLabelStyle = {
+            color: textColor,
+            fontSize: config.axisLabelFontSize || 13,
+            fontWeight: 'bold',
+            margin: config.axisLabelMargin ?? 8
+        };
+        const axisNameStyle = { color: textColor, fontSize: config.axisTitleFontSize || 14, fontWeight: 'bold' };
+        const axisTitleGap = config.axisTitleGap ?? 30;
         const legendTextStyle = { color: textColor, fontSize: 13, fontWeight: 'bold' };
 
         // --- SCATTER ---
@@ -1343,8 +1358,8 @@ class Visualizer {
                  ...animation,
                  tooltip: { trigger: 'item' },
                  legend: { textStyle: legendTextStyle },
-                 xAxis: { type: 'value', name: config.customXLabel || config.xAxis, nameLocation: 'middle', nameGap: 30, axisLabel: { ...axisLabelStyle }, nameTextStyle: axisNameStyle, splitLine: { lineStyle: { color: gridColor } } },
-                 yAxis: { type: 'value', name: config.customYLabel || config.yAxis, nameLocation: 'middle', nameGap: 30, axisLabel: { ...axisLabelStyle }, nameTextStyle: axisNameStyle, splitLine: { lineStyle: { color: gridColor } } },
+                xAxis: { type: 'value', name: config.customXLabel || config.xAxis, nameLocation: 'middle', nameGap: axisTitleGap, axisLabel: { ...axisLabelStyle }, nameTextStyle: axisNameStyle, splitLine: { lineStyle: { color: gridColor } } },
+                yAxis: { type: 'value', name: config.customYLabel || config.yAxis, nameLocation: 'middle', nameGap: axisTitleGap, axisLabel: { ...axisLabelStyle }, nameTextStyle: axisNameStyle, splitLine: { lineStyle: { color: gridColor } } },
                  series: series,
                  backgroundColor: 'transparent'
              };
@@ -1357,8 +1372,8 @@ class Visualizer {
                  color: palette,
                  ...animation,
                  tooltip: { trigger: 'item', confine: true },
-                 xAxis: { type: 'category', data: axisData, axisLabel: { ...axisLabelStyle }, name: config.customXLabel || config.groupBy || "Group", nameTextStyle: axisNameStyle },
-                 yAxis: { type: 'value', axisLabel: { ...axisLabelStyle }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || config.xAxis || "Value", nameTextStyle: axisNameStyle },
+                xAxis: { type: 'category', data: axisData, axisLabel: { ...axisLabelStyle }, name: config.customXLabel || config.groupBy || "Group", nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
+                yAxis: { type: 'value', axisLabel: { ...axisLabelStyle }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || config.xAxis || "Value", nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
                  series: [
                      {
                          name: 'boxplot',
@@ -1383,8 +1398,8 @@ class Visualizer {
                  color: palette,
                  tooltip: { position: 'top' },
                  grid: { height: '70%', bottom: '15%' },
-                 xAxis: { type: 'category', data: xArr, axisLabel: { ...axisLabelStyle, rotate: 30 }, name: config.customXLabel || config.xAxis, nameTextStyle: axisNameStyle },
-                 yAxis: { type: 'category', data: yArr, axisLabel: { ...axisLabelStyle }, name: config.customYLabel || (config.yAxis || config.groupBy), nameTextStyle: axisNameStyle },
+                xAxis: { type: 'category', data: xArr, axisLabel: { ...axisLabelStyle, rotate: 30 }, name: config.customXLabel || config.xAxis, nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
+                yAxis: { type: 'category', data: yArr, axisLabel: { ...axisLabelStyle }, name: config.customYLabel || (config.yAxis || config.groupBy), nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
                 visualMap: {
                     min: 0,
                     max: maxVal,
@@ -1411,8 +1426,8 @@ class Visualizer {
              return {
                  tooltip: { position: 'top', formatter: ({ value }) => `Correlation: ${Number(value[2]).toFixed(2)}` },
                  grid: { height: '70%', bottom: '15%' },
-                 xAxis: { type: 'category', data: labels, axisLabel: { ...axisLabelStyle }, name: 'Variables', nameTextStyle: axisNameStyle },
-                 yAxis: { type: 'category', data: labels, axisLabel: { ...axisLabelStyle }, name: 'Variables', nameTextStyle: axisNameStyle },
+                xAxis: { type: 'category', data: labels, axisLabel: { ...axisLabelStyle }, name: 'Variables', nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
+                yAxis: { type: 'category', data: labels, axisLabel: { ...axisLabelStyle }, name: 'Variables', nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
                  visualMap: {
                      min: -1,
                      max: 1,
@@ -1458,8 +1473,8 @@ class Visualizer {
                  color: palette,
                  ...animation,
                  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                 xAxis: { type: 'category', data: xLabels, axisLabel: { ...axisLabelStyle }, name: config.customXLabel || config.xAxis, nameTextStyle: axisNameStyle },
-                 yAxis: { type: 'value', axisLabel: { ...axisLabelStyle }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || "Count", nameTextStyle: axisNameStyle },
+                xAxis: { type: 'category', data: xLabels, axisLabel: { ...axisLabelStyle }, name: config.customXLabel || config.xAxis, nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
+                yAxis: { type: 'value', axisLabel: { ...axisLabelStyle }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || "Count", nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' },
                  series: [{
                      type: 'bar',
                      data: counts,
@@ -1634,9 +1649,9 @@ class Visualizer {
             if (config.customYLabel) finalYAxis.name = config.customYLabel;
             // Axis Name Location
             finalXAxis.nameLocation = 'middle';
-            finalXAxis.nameGap = 30;
+            finalXAxis.nameGap = axisTitleGap;
             finalYAxis.nameLocation = 'middle';
-            finalYAxis.nameGap = isHorizontal ? 30 : 40;
+            finalYAxis.nameGap = isHorizontal ? axisTitleGap : axisTitleGap + 10;
 
             return {
                 color: finalPalette,
@@ -1724,7 +1739,7 @@ class UIManager {
         document.getElementById('hide-self-comparison').addEventListener('change', updateViz);
         
         // Label Inputs Triggers
-        ['custom-title', 'custom-subtitle', 'custom-xlabel', 'custom-ylabel'].forEach(id => {
+        ['custom-title', 'custom-subtitle', 'custom-xlabel', 'custom-ylabel', 'title-font-size', 'subtitle-font-size', 'title-left', 'title-offset-y', 'axis-title-font-size', 'axis-label-font-size', 'axis-title-gap', 'axis-label-margin'].forEach(id => {
             document.getElementById(id).addEventListener('input', updateViz);
         });
 
@@ -1829,6 +1844,22 @@ class UIManager {
             const input = document.getElementById(id);
             if (input) input.value = '';
         });
+
+        const numericDefaults = {
+            'title-font-size': 18,
+            'subtitle-font-size': 14,
+            'title-offset-y': 0,
+            'axis-title-font-size': 14,
+            'axis-label-font-size': 13,
+            'axis-title-gap': 30,
+            'axis-label-margin': 8
+        };
+        Object.entries(numericDefaults).forEach(([id, value]) => {
+            const input = document.getElementById(id);
+            if (input) input.value = value;
+        });
+        const titleLeft = document.getElementById('title-left');
+        if (titleLeft) titleLeft.value = 'center';
 
         document.querySelectorAll('.chart-type-btn').forEach(btn => btn.classList.remove('btn-active'));
         const defaultChart = document.querySelector('.chart-type-btn[data-type="bar"]');
@@ -1956,19 +1987,33 @@ class UIManager {
 
     updateVisualization() {
         this.ensureDefaultAxes();
+        const getNumber = (id, fallback) => {
+            const raw = document.getElementById(id)?.value;
+            const parsed = Number(raw);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        };
+        const activeChartBtn = document.querySelector('.chart-type-btn.btn-active');
         const config = {
             xAxis: document.getElementById('x-axis-select').value,
             yAxis: document.getElementById('y-axis-select').value,
             groupBy: document.getElementById('group-by-select').value,
             splitValues: document.getElementById('split-values').checked,
             strictMode: document.getElementById('strict-mode').checked,
-            chartType: document.querySelector('.chart-type-btn.btn-active').dataset.type,
-            
+            chartType: activeChartBtn ? activeChartBtn.dataset.type : 'bar',
+
             // Custom Labels
             customTitle: document.getElementById('custom-title').value,
             customSubtitle: document.getElementById('custom-subtitle').value,
             customXLabel: document.getElementById('custom-xlabel').value,
-            customYLabel: document.getElementById('custom-ylabel').value
+            customYLabel: document.getElementById('custom-ylabel').value,
+            titleFontSize: getNumber('title-font-size', 18),
+            subtitleFontSize: getNumber('subtitle-font-size', 14),
+            titleTopOffset: getNumber('title-offset-y', 0),
+            titleLeft: document.getElementById('title-left').value || 'center',
+            axisTitleFontSize: getNumber('axis-title-font-size', 14),
+            axisLabelFontSize: getNumber('axis-label-font-size', 13),
+            axisTitleGap: getNumber('axis-title-gap', 30),
+            axisLabelMargin: getNumber('axis-label-margin', 8)
         };
         if (config.xAxis) {
             this.viz.render(this.dm.filteredData, config);
