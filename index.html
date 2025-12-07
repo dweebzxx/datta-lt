@@ -301,6 +301,7 @@
                         <button class="chart-type-btn btn-outline btn-active px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="bar">Vertical Bar</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="bar-horizontal">Horizontal Bar</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="grouped-bar">Grouped Bar</button>
+                        <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="side-by-side-bar">Side-by-Side Bar</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="stacked-column">Stacked Bar</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="100-stacked-column">100% Stacked</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="diverging-bar">Diverging Bar</button>
@@ -311,12 +312,15 @@
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="line">Line Chart</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="area">Area Chart</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="slope">Slope Graph</button>
-                        
+
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="scatter">Scatter Plot</button>
+                        <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="scatter-jitter">Scatter + Jitter</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="histogram">Histogram</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="boxplot">Box Plot</button>
-                        
+
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="heatmap">Heatmap</button>
+                        <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="demographic-heatmap">Demographic × Response Heatmap</button>
+                        <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="correlation-heatmap">Correlation Heatmap</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="radar">Radar Chart</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="wordCloud">Word Cloud</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="sankey">Sankey</button>
@@ -328,11 +332,27 @@
                 <!-- Appearance (Simplified) -->
                 <section id="theme-section">
                      <h3 class="text-xs font-semibold uppercase tracking-wider mb-2 opacity-70">Theme</h3>
+                     <div class="mb-2 space-y-1">
+                        <label class="block text-[11px] font-semibold">Color Theme (10 curated palettes)</label>
+                        <select id="color-theme-select" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="aurora">Aurora (Default)</option>
+                            <option value="canyon">Canyon</option>
+                            <option value="seashore">Seashore</option>
+                            <option value="citrus">Citrus</option>
+                            <option value="moss">Moss</option>
+                            <option value="bloom">Bloom</option>
+                            <option value="mono">Monotone</option>
+                            <option value="jewel">Jewel</option>
+                            <option value="pastelpunch">Pastel Punch</option>
+                            <option value="midnight">Midnight</option>
+                        </select>
+                     </div>
                      <div class="flex justify-between items-center mb-2">
                         <span class="text-xs">Custom Palette</span>
                         <button id="btn-shuffle-colors" class="text-[10px] text-blue-500 hover:text-blue-700">Shuffle</button>
                      </div>
                      <div class="grid grid-cols-5 gap-1 mb-2" id="color-inputs">
+                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center" aria-label="Color 1">
                             <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
                             <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
                             <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
@@ -341,8 +361,14 @@
                             <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
                             <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
                             <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center" aria-label="Color 10">
+                     </div>
+                     <div class="flex items-center justify-between text-[11px] bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700 rounded p-2">
+                        <span class="font-semibold">Quick Demos</span>
+                        <div class="space-x-1">
+                            <button id="btn-demo-bar" class="px-2 py-1 rounded border text-[11px]">Sample Bar</button>
+                            <button id="btn-demo-heatmap" class="px-2 py-1 rounded border text-[11px]">Sample Heatmap</button>
+                        </div>
                      </div>
                 </section>
             </div>
@@ -430,7 +456,7 @@
                                 <h2 id="chart-title" class="text-sm font-bold truncate max-w-xl"></h2>
                                 <button id="btn-download-chart" class="text-xs flex items-center text-gray-500 hover:text-blue-500 transition-colors">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                    Download PNG
+                                    Export Image
                                 </button>
                             </div>
                             

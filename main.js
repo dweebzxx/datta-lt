@@ -1,8 +1,10 @@
 
-/* 
+/*
     datta Ai - Generic Data Visualizer
     Production Version
 */
+
+let um = null;
 
 // --- Utility Functions ---
 
@@ -168,11 +170,25 @@ class StatisticsEngine {
 
 class ColorManager {
     constructor() {
-        this.systemDefaults = ['#005960', '#CC5500', '#AA2E25', '#DDAA33', '#43B3AE', '#3A577A', '#7FC8B8'];
+        this.themes = {
+            aurora: ['#005960', '#0099A8', '#4BC0C8', '#FF7E67', '#FFC4A3', '#5B7DB1', '#3E517A', '#42B883', '#DDDDDD', '#13293D'],
+            canyon: ['#FF5E5B', '#D7263D', '#F2A541', '#F7D488', '#E0E2DB', '#116979', '#87A8A4', '#B2B1B9', '#F26419', '#33658A'],
+            seashore: ['#023E8A', '#0077B6', '#0096C7', '#00B4D8', '#48CAE4', '#90E0EF', '#CAF0F8', '#03045E', '#1D3557', '#457B9D'],
+            citrus: ['#003049', '#D62828', '#F77F00', '#FCBF49', '#EAE2B7', '#F0803C', '#FFB238', '#FF7F51', '#A53860', '#450920'],
+            moss: ['#264653', '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#1B4332', '#2D6A4F', '#52B788', '#74C69D', '#D8F3DC'],
+            bloom: ['#6A0572', '#AB83A1', '#C9CCD5', '#FFB5A7', '#FCD5CE', '#F8EDEB', '#9D8189', '#5C5470', '#9F86C0', '#D1D1D1'],
+            mono: ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#6FFFE9', '#BFC0C0', '#8D99AE', '#2B2D42', '#EDF2F4', '#EF233C'],
+            jewel: ['#051923', '#003554', '#006494', '#0582CA', '#00A6FB', '#1B4965', '#2E8BC0', '#145DA0', '#B1D4E0', '#89C2D9'],
+            pastelpunch: ['#F72585', '#B5179E', '#7209B7', '#560BAD', '#480CA8', '#3A0CA3', '#3F37C9', '#4361EE', '#4895EF', '#4CC9F0'],
+            midnight: ['#0B3954', '#087E8B', '#FF5A5F', '#00A6A6', '#B8B08D', '#F18F01', '#C5D86D', '#9CAFB7', '#6F1D1B', '#FFD166']
+        };
+        this.activeTheme = localStorage.getItem('activeTheme') || 'aurora';
+        this.systemDefaults = this.themes[this.activeTheme];
         this.customColors = [];
+        this.paletteListeners = [];
         this.init();
     }
-    
+
     init() {
         // Load custom colors from storage
         const storedColors = localStorage.getItem('customColors');
@@ -182,15 +198,32 @@ class ColorManager {
             this.customColors.forEach((c, i) => {
                 if (inputs[i]) inputs[i].value = c;
             });
+        } else {
+            this.applyThemeToInputs();
         }
-        
+
         const inputs = document.querySelectorAll('.color-input');
-        inputs.forEach((input, idx) => {
-            input.addEventListener('change', () => this.updateCustomColors());
+        inputs.forEach((input) => {
+            input.addEventListener('change', () => {
+                this.updateCustomColors();
+                this.notifyPaletteChange();
+            });
         });
-        
-        document.getElementById('btn-shuffle-colors').addEventListener('click', () => this.shuffleColors());
-        
+
+        const themeSelect = document.getElementById('color-theme-select');
+        if (themeSelect) {
+            themeSelect.value = this.activeTheme;
+            themeSelect.addEventListener('change', (e) => {
+                this.setTheme(e.target.value);
+                this.notifyPaletteChange();
+            });
+        }
+
+        document.getElementById('btn-shuffle-colors').addEventListener('click', () => {
+            this.shuffleColors();
+            this.notifyPaletteChange();
+        });
+
         // Dark Mode Toggle
         document.getElementById('dark-mode-toggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
@@ -198,14 +231,40 @@ class ColorManager {
             localStorage.setItem('themeMode', isDark ? 'dark' : 'light');
             if (um) um.updateVisualization();
         });
-        
+
         // Load theme mode
         const storedTheme = localStorage.getItem('themeMode');
         if (storedTheme === 'dark') {
             document.documentElement.classList.add('dark');
         }
     }
-    
+
+    notifyPaletteChange() {
+        this.paletteListeners.forEach(cb => cb());
+    }
+
+    onPaletteChange(cb) {
+        this.paletteListeners.push(cb);
+    }
+
+    setTheme(themeName) {
+        if (this.themes[themeName]) {
+            this.activeTheme = themeName;
+            localStorage.setItem('activeTheme', themeName);
+            this.systemDefaults = this.themes[themeName];
+            this.customColors = [];
+            localStorage.removeItem('customColors');
+            this.applyThemeToInputs();
+        }
+    }
+
+    applyThemeToInputs() {
+        const inputs = document.querySelectorAll('.color-input');
+        inputs.forEach((input, i) => {
+            input.value = this.systemDefaults[i] || '';
+        });
+    }
+
     updateCustomColors() {
         this.customColors = [];
         document.querySelectorAll('.color-input').forEach(input => {
@@ -221,7 +280,8 @@ class ColorManager {
         const palette = [...this.customColors];
         if (palette.length === 0) {
             // If no custom colors, start with defaults or random
-            for(let i=0; i<10; i++) palette.push(chroma.random().hex());
+            this.systemDefaults.forEach(c => palette.push(c));
+            while (palette.length < 10) palette.push(chroma.random().hex());
         } else {
              // Fisher-Yates shuffle
             for (let i = palette.length - 1; i > 0; i--) {
@@ -238,7 +298,7 @@ class ColorManager {
         });
         this.updateCustomColors();
     }
-    
+
     getPalette(count) {
         let palette = [];
         if (this.customColors.length === 0) {
@@ -257,11 +317,11 @@ class ColorManager {
         }
         return palette;
     }
-    
+
     getTextColor() {
         return document.documentElement.classList.contains('dark') ? '#F4F3EE' : '#2C2C2C'; // High contrast
     }
-    
+
     getGridColor() {
         return document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     }
@@ -269,8 +329,8 @@ class ColorManager {
 
 class DataManager {
     constructor() {
-        this.rawData = []; 
-        this.processedData = []; 
+        this.rawData = [];
+        this.processedData = [];
         this.filteredData = [];
         this.headers = [];
         this.codebook = { mapping: {}, questions: {} }; // { mapping: {col: {val: label}}, questions: {col: "Text"} }
@@ -371,12 +431,278 @@ class DataManager {
     }
 }
 
+class FilterEngine {
+    constructor(dataManager, onChange) {
+        this.dm = dataManager;
+        this.onChange = onChange;
+        this.activeFilters = {};
+        this.container = document.getElementById('filters-container');
+        this.addBtn = document.getElementById('btn-add-filter');
+
+        if (this.addBtn) {
+            this.addBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.addFilterRow();
+            });
+        }
+    }
+
+    setOnChange(callback) {
+        this.onChange = callback;
+    }
+
+    generateFilters() {
+        // Remove all rows except the add button
+        this.activeFilters = {};
+        if (!this.container) return;
+
+        this.container.querySelectorAll('.filter-row').forEach(row => row.remove());
+        this.updateFilters();
+    }
+
+    refreshFilterOptions() {
+        if (!this.container) return;
+
+        const headers = this.dm.headers.filter(h => h !== '_id');
+        this.container.querySelectorAll('.filter-row select[data-type="column"]').forEach(select => {
+            const current = select.value;
+            this.populateColumnOptions(select, headers);
+            if (headers.includes(current)) {
+                select.value = current;
+                this.populateValueOptions(select.closest('.filter-row'), current);
+            }
+        });
+    }
+
+    addFilterRow() {
+        if (!this.container) return;
+
+        const row = document.createElement('div');
+        row.className = 'filter-row border border-gray-200 dark:border-gray-700 rounded p-2 space-y-2 glass-panel';
+
+        const columnSelect = document.createElement('select');
+        columnSelect.className = 'w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none';
+        columnSelect.dataset.type = 'column';
+        columnSelect.innerHTML = '<option value="">Select column...</option>';
+        this.populateColumnOptions(columnSelect, this.dm.headers.filter(h => h !== '_id'));
+
+        const valueSelect = document.createElement('select');
+        valueSelect.className = 'w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none';
+        valueSelect.multiple = true;
+        valueSelect.size = 5;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'text-[10px] text-red-500 hover:text-red-700';
+        removeBtn.textContent = 'Remove';
+
+        row.appendChild(columnSelect);
+        row.appendChild(valueSelect);
+        row.appendChild(removeBtn);
+
+        this.container.insertBefore(row, this.addBtn);
+
+        columnSelect.addEventListener('change', () => {
+            const col = columnSelect.value;
+            this.populateValueOptions(row, col);
+        });
+
+        valueSelect.addEventListener('change', () => {
+            const col = columnSelect.value;
+            const values = Array.from(valueSelect.selectedOptions).map(opt => opt.value);
+            if (col) {
+                this.activeFilters[col] = values;
+                this.updateFilters();
+            }
+        });
+
+        removeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const col = columnSelect.value;
+            if (col && this.activeFilters[col]) delete this.activeFilters[col];
+            row.remove();
+            this.updateFilters();
+        });
+    }
+
+    populateColumnOptions(select, headers) {
+        while (select.options.length > 1) select.remove(1);
+        headers.forEach(h => {
+            const option = document.createElement('option');
+            option.value = h;
+            option.textContent = h;
+            select.add(option);
+        });
+    }
+
+    populateValueOptions(row, column) {
+        const valueSelect = row.querySelector('select[multiple]');
+        if (!valueSelect) return;
+
+        valueSelect.innerHTML = '';
+        if (!column) {
+            this.updateFilters();
+            return;
+        }
+
+        const values = this.getUniqueValues(column);
+        values.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v;
+            valueSelect.add(opt);
+        });
+    }
+
+    getUniqueValues(column) {
+        const set = new Set();
+        this.dm.processedData.forEach(row => {
+            let val = row[column];
+            if (typeof val === 'string' && val.includes(',')) {
+                val.split(',').map(v => v.trim()).forEach(v => set.add(v || 'N/A'));
+            } else {
+                set.add(val === undefined || val === null ? 'N/A' : String(val));
+            }
+        });
+        return Array.from(set).sort();
+    }
+
+    updateFilters() {
+        this.dm.applyFilters(this.activeFilters);
+        if (typeof this.onChange === 'function') this.onChange();
+    }
+}
+
+class CodebookManager {
+    constructor(dataManager) {
+        this.dm = dataManager;
+        this.overlay = document.getElementById('map-modal-overlay');
+        this.columnSelect = document.getElementById('map-column-select');
+        this.tableBody = document.getElementById('map-table-body');
+        this.saveBtn = document.getElementById('save-map');
+        this.closeBtn = document.getElementById('close-map-modal');
+        this.downloadTemplateBtn = document.getElementById('btn-download-codebook');
+
+        this.registerEvents();
+    }
+
+    registerEvents() {
+        if (this.closeBtn) this.closeBtn.addEventListener('click', () => this.close());
+        if (this.overlay) this.overlay.addEventListener('click', (e) => { if (e.target === this.overlay) this.close(); });
+        if (this.columnSelect) this.columnSelect.addEventListener('change', (e) => this.renderTable(e.target.value));
+        if (this.saveBtn) this.saveBtn.addEventListener('click', () => this.saveMapping());
+        if (this.downloadTemplateBtn) this.downloadTemplateBtn.addEventListener('click', () => this.downloadTemplate());
+    }
+
+    open(headers) {
+        if (!this.overlay) return;
+        this.refreshColumns(headers || this.dm.headers);
+        this.overlay.classList.remove('hidden');
+    }
+
+    close() {
+        if (this.overlay) this.overlay.classList.add('hidden');
+    }
+
+    refreshColumns(headers = []) {
+        if (!this.columnSelect) return;
+
+        const safeHeaders = headers.filter(h => h !== '_id');
+        while (this.columnSelect.options.length > 1) this.columnSelect.remove(1);
+        safeHeaders.forEach(h => {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.textContent = h;
+            this.columnSelect.add(opt);
+        });
+
+        if (safeHeaders.length > 0) {
+            this.columnSelect.value = safeHeaders[0];
+            this.renderTable(safeHeaders[0]);
+        }
+    }
+
+    renderTable(column) {
+        if (!this.tableBody) return;
+        this.tableBody.innerHTML = '';
+        if (!column) return;
+
+        const values = this.getUniqueValues(column);
+        values.forEach(val => {
+            const tr = document.createElement('tr');
+            const tdVal = document.createElement('td');
+            tdVal.className = 'px-6 py-3 text-gray-700 dark:text-gray-200';
+            tdVal.textContent = val;
+
+            const tdInput = document.createElement('td');
+            tdInput.className = 'px-6 py-3';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'w-full border rounded p-2 text-sm bg-white dark:bg-gray-800 dark:border-gray-700';
+            input.dataset.original = val;
+
+            if (this.dm.codebook.mapping[column] && this.dm.codebook.mapping[column][val]) {
+                input.value = this.dm.codebook.mapping[column][val];
+            }
+
+            tdInput.appendChild(input);
+            tr.appendChild(tdVal);
+            tr.appendChild(tdInput);
+            this.tableBody.appendChild(tr);
+        });
+    }
+
+    getUniqueValues(column) {
+        const set = new Set();
+        this.dm.processedData.forEach(row => {
+            let val = row[column];
+            if (typeof val === 'string' && val.includes(',')) {
+                val.split(',').map(v => v.trim()).forEach(v => set.add(v || 'N/A'));
+            } else {
+                set.add(val === undefined || val === null ? 'N/A' : String(val));
+            }
+        });
+        return Array.from(set).sort();
+    }
+
+    saveMapping() {
+        if (!this.columnSelect) return;
+        const column = this.columnSelect.value;
+        if (!column) return;
+
+        const mapping = {};
+        this.tableBody.querySelectorAll('input[data-original]').forEach(input => {
+            if (input.value.trim() !== '') {
+                mapping[input.dataset.original] = input.value.trim();
+            }
+        });
+
+        this.dm.setCodebook(column, mapping);
+        alert('Mapping saved');
+    }
+
+    downloadTemplate() {
+        const headers = this.dm.headers.filter(h => h !== '_id');
+        const rows = [['Variable', 'Value', 'Label', 'Question']];
+        headers.forEach(h => rows.push([h, '', '', '']));
+
+        const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'codebook_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+}
+
 class Visualizer {
     constructor(colorManager, statsEngine, dataManager) {
         this.colorManager = colorManager;
         this.statsEngine = statsEngine;
         this.dm = dataManager; // Access to codebook questions
         this.chartInstance = null;
+        this.resizeHandler = null;
     }
 
     // --- Dashboard Mini Cards ---
@@ -520,7 +846,10 @@ class Visualizer {
         
         titleEl.textContent = displayTitle;
 
-        if (this.chartInstance) this.chartInstance.dispose();
+        if (this.chartInstance) {
+            this.chartInstance.dispose();
+            if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
+        }
 
         if (config.chartType === 'crosstab') {
             this.renderCrosstab(chartDom, data, config);
@@ -529,17 +858,23 @@ class Visualizer {
         }
 
         this.chartInstance = echarts.init(chartDom);
-        window.addEventListener('resize', () => this.chartInstance.resize());
+        this.resizeHandler = () => this.chartInstance && this.chartInstance.resize();
+        window.addEventListener('resize', this.resizeHandler);
 
         // Prepare Data based on chart type requirements
         let processedData;
-        if (config.chartType === 'scatter' || config.chartType === 'heatmap' || config.chartType === 'boxplot' || config.chartType === 'sankey') {
+        if (config.chartType === 'scatter' || config.chartType === 'scatter-jitter' || config.chartType === 'heatmap' || config.chartType === 'demographic-heatmap' || config.chartType === 'correlation-heatmap' || config.chartType === 'boxplot' || config.chartType === 'sankey') {
              // These types might need raw-ish data or special processing
              processedData = this.prepareSpecialData(data, config);
         } else if (config.chartType === 'histogram') {
              processedData = this.prepareHistogram(data, config);
         } else {
              processedData = this.aggregateData(data, config);
+        }
+
+        if (processedData && processedData.error) {
+            chartDom.innerHTML = `<div class="flex items-center justify-center h-full text-center px-4 text-sm text-red-600 dark:text-red-300">${processedData.error}</div>`;
+            return;
         }
 
         const option = this.generateOption(processedData, config);
@@ -558,7 +893,7 @@ class Visualizer {
         this.chartInstance.setOption(option);
         
         // Only attach click handler if it's a standard aggregated chart where findIdsForPoint works well
-        if (!['scatter', 'boxplot', 'sankey', 'histogram', 'heatmap'].includes(config.chartType)) {
+        if (!['scatter', 'scatter-jitter', 'boxplot', 'sankey', 'histogram', 'heatmap', 'demographic-heatmap', 'correlation-heatmap'].includes(config.chartType)) {
             this.chartInstance.on('click', (params) => {
                 if (window.handleChartClick) {
                     const ids = this.findIdsForPoint(data, config, params);
@@ -759,18 +1094,20 @@ class Visualizer {
     prepareSpecialData(data, config) {
         const { xAxis, yAxis, groupBy } = config;
         
-        if (config.chartType === 'scatter') {
+        if (config.chartType === 'scatter' || config.chartType === 'scatter-jitter') {
              // Need numeric X and Y.
-             // Grouping
+             if (!yAxis) return { error: 'Scatter plots require both X and Y axes.' };
              const groups = {};
-             
+
              data.forEach(row => {
-                 const x = parseFloat(row[xAxis]);
-                 const y = parseFloat(row[yAxis]);
-                 if (!isNaN(x) && !isNaN(y)) {
+                 const xBase = parseFloat(row[xAxis]);
+                 const yBase = parseFloat(row[yAxis]);
+                 if (!isNaN(xBase) && !isNaN(yBase)) {
                      const gVal = groupBy ? (row[groupBy] || 'All') : 'All';
                      if (!groups[gVal]) groups[gVal] = [];
-                     groups[gVal].push([x, y]);
+                     const jitterX = config.chartType === 'scatter-jitter' ? (Math.random() - 0.5) * 0.6 : 0;
+                     const jitterY = config.chartType === 'scatter-jitter' ? (Math.random() - 0.5) * 0.6 : 0;
+                     groups[gVal].push([xBase + jitterX, yBase + jitterY]);
                  }
              });
              return { groups };
@@ -837,19 +1174,41 @@ class Visualizer {
              return { boxData, axisData, outliers };
         }
         
-        if (config.chartType === 'heatmap') {
+        if (config.chartType === 'correlation-heatmap') {
+             const numericCols = this.dm.headers.filter(h => h !== '_id').filter(col => data.some(row => !isNaN(parseFloat(row[col]))));
+             if (numericCols.length < 2) return { error: 'Correlation heatmap requires at least two numeric columns.' };
+             const matrixData = [];
+             numericCols.forEach((colA, i) => {
+                 numericCols.forEach((colB, j) => {
+                     const arrA = [];
+                     const arrB = [];
+                     data.forEach(row => {
+                         const a = parseFloat(row[colA]);
+                         const b = parseFloat(row[colB]);
+                         if (!isNaN(a) && !isNaN(b)) {
+                             arrA.push(a);
+                             arrB.push(b);
+                         }
+                     });
+                     const corr = arrA.length > 1 ? jStat.corrcoeff(arrA, arrB) : 0;
+                     matrixData.push([j, i, corr]);
+                 });
+             });
+             return { labels: numericCols, matrixData };
+        }
+
+        if (config.chartType === 'heatmap' || config.chartType === 'demographic-heatmap') {
              // 2D Density (Numeric X, Numeric Y) OR Crosstab Heatmap (Cat X, Cat Y)
-             // Let's implement Cat X Cat Heatmap for now as it maps to Crosstab logic but visually.
              const xCol = xAxis;
              const yCol = yAxis || groupBy;
-             
+
              if (!yCol) return { error: "Heatmap requires Y-Axis or Group By variable." };
-             
+
              const counts = {};
              const xKeys = new Set();
              const yKeys = new Set();
              let maxVal = 0;
-             
+
              data.forEach(row => {
                  const x = row[xCol] || 'N/A';
                  const y = row[yCol] || 'N/A';
@@ -859,10 +1218,10 @@ class Visualizer {
                  counts[k] = (counts[k] || 0) + 1;
                  if (counts[k] > maxVal) maxVal = counts[k];
              });
-             
+
              const xArr = Array.from(xKeys).sort();
              const yArr = Array.from(yKeys).sort();
-             
+
              const seriesData = [];
              xArr.forEach((x, i) => {
                  yArr.forEach((y, j) => {
@@ -870,7 +1229,7 @@ class Visualizer {
                      seriesData.push([i, j, val]);
                  });
              });
-             
+
              return { xArr, yArr, seriesData, maxVal };
         }
 
@@ -957,13 +1316,14 @@ class Visualizer {
         const palette = this.colorManager.getPalette(10); // Default palette size
 
         // --- SCATTER ---
-        if (chartType === 'scatter') {
+        if (chartType === 'scatter' || chartType === 'scatter-jitter') {
              const { groups } = processed;
              const series = Object.keys(groups || {}).map(g => ({
                  name: g,
                  type: 'scatter',
                  data: groups[g],
-                 symbolSize: 8
+                 symbolSize: 8,
+                 emphasis: { focus: 'series' }
              }));
              return {
                  color: palette,
@@ -1004,7 +1364,7 @@ class Visualizer {
         }
         
         // --- HEATMAP ---
-        if (chartType === 'heatmap') {
+        if (chartType === 'heatmap' || chartType === 'demographic-heatmap') {
              const { xArr, yArr, seriesData, maxVal } = processed;
              return {
                  color: palette,
@@ -1028,6 +1388,33 @@ class Visualizer {
                      itemStyle: {
                          emphasis: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' }
                      }
+                 }],
+                 backgroundColor: 'transparent'
+             };
+        }
+
+        if (chartType === 'correlation-heatmap') {
+             const { labels, matrixData } = processed;
+             return {
+                 tooltip: { position: 'top', formatter: ({ value }) => `Correlation: ${Number(value[2]).toFixed(2)}` },
+                 grid: { height: '70%', bottom: '15%' },
+                 xAxis: { type: 'category', data: labels, axisLabel: { color: textColor }, name: 'Variables' },
+                 yAxis: { type: 'category', data: labels, axisLabel: { color: textColor }, name: 'Variables' },
+                 visualMap: {
+                     min: -1,
+                     max: 1,
+                     calculable: true,
+                     orient: 'horizontal',
+                     left: 'center',
+                     bottom: '0%',
+                     textStyle: { color: textColor },
+                     inRange: { color: ['#8B0000', '#ffffff', '#00429d'] }
+                 },
+                 series: [{
+                     type: 'heatmap',
+                     data: matrixData,
+                     label: { show: true, formatter: ({ value }) => Number(value[2]).toFixed(2), color: textColor },
+                     emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.3)' } }
                  }],
                  backgroundColor: 'transparent'
              };
@@ -1168,7 +1555,7 @@ class Visualizer {
         } else {
             const iterGroups = isGrouped ? groups : ['All'];
             
-            iterGroups.forEach(g => {
+            iterGroups.forEach((g, groupIndex) => {
                 const data = xValues.map(x => {
                     const bucket = agg[x][g];
                     return bucket ? (isYAxis ? bucket.sumY : bucket.count) : 0;
@@ -1199,12 +1586,13 @@ class Visualizer {
                 } else if (isHorizontal) {
                     type = 'bar';
                 }
+                const finalData = isDiverging ? data.map(v => v * (groupIndex % 2 === 0 ? 1 : -1)) : data;
                 series.push({
                     name: isGrouped ? g : config.yAxis || 'Count',
                     type: type,
                     stack: stack,
                     areaStyle: areaStyle,
-                    data: data
+                    data: finalData
                 });
             });
             
@@ -1285,6 +1673,8 @@ class UIManager {
     initEventListeners() {
         const fileInput = document.getElementById('file-upload');
         const fileInfo = document.getElementById('file-name-display');
+
+        this.viz.colorManager.onPaletteChange(() => this.updateVisualization());
         
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -1292,21 +1682,8 @@ class UIManager {
                 try {
                     fileInfo.textContent = 'Loading...';
                     await this.dm.loadFile(file);
-                    fileInfo.textContent = file.name;
-                    document.getElementById('row-count-display').textContent = `${this.dm.rawData.length} rows`;
-                    document.getElementById('data-summary').classList.remove('hidden');
-                    
-                    this.populateColumnSelects();
-                    this.fe.generateFilters(); 
-                    
-                    // Render Dashboard
-                    this.viz.renderDashboard(
-                        this.dm.filteredData, 
-                        this.dm.headers, 
-                        'dashboard-grid', 
-                        (col) => this.vm.showInspector({ xAxis: col })
-                    );
-                    
+                    this.onDataReady(file.name);
+
                 } catch (err) {
                     alert(`Error: ${err.message}`);
                 }
@@ -1344,10 +1721,13 @@ class UIManager {
                 this.updateVisualization();
             });
         });
+
+        document.getElementById('btn-demo-bar').addEventListener('click', () => this.applyDemoPreset('bar'));
+        document.getElementById('btn-demo-heatmap').addEventListener('click', () => this.applyDemoPreset('heatmap'));
         
         // Codebook Triggers
         document.getElementById('btn-codebook-trigger').addEventListener('click', () => {
-             document.getElementById('map-modal-overlay').classList.remove('hidden');
+             this.cbm.open(this.dm.headers);
         });
         
          document.getElementById('codebook-csv-upload').addEventListener('change', (e) => {
@@ -1395,7 +1775,25 @@ class UIManager {
              }
          });
     }
-    
+
+    onDataReady(label = 'Data') {
+        document.getElementById('file-name-display').textContent = label;
+        document.getElementById('row-count-display').textContent = `${this.dm.rawData.length} rows`;
+        document.getElementById('data-summary').classList.remove('hidden');
+
+        this.populateColumnSelects();
+        this.fe.generateFilters();
+        this.cbm.refreshColumns(this.dm.headers);
+        this.updateFilterCount();
+
+        this.viz.renderDashboard(
+            this.dm.filteredData,
+            this.dm.headers,
+            'dashboard-grid',
+            (col) => this.vm.showInspector({ xAxis: col })
+        );
+    }
+
     setInspectorConfig(config) {
         if (config.xAxis) {
             document.getElementById('x-axis-select').value = config.xAxis;
@@ -1472,6 +1870,45 @@ class UIManager {
             this.viz.render(this.dm.filteredData, config);
         }
     }
+
+    applyDemoPreset(type) {
+        if (!this.dm.headers.length) return;
+        const usable = this.dm.headers.filter(h => h !== '_id');
+        const [first, second, third] = usable;
+        document.getElementById('x-axis-select').value = first || '';
+        document.getElementById('y-axis-select').value = second || '';
+        document.getElementById('group-by-select').value = third || '';
+
+        const setChartType = (t) => {
+            const target = document.querySelector(`.chart-type-btn[data-type="${t}"]`);
+            if (target) {
+                document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('btn-active'));
+                target.classList.add('btn-active');
+            }
+        };
+
+        const themeSelect = document.getElementById('color-theme-select');
+        if (themeSelect) {
+            themeSelect.value = type === 'heatmap' ? 'canyon' : 'seashore';
+            themeSelect.dispatchEvent(new Event('change'));
+        }
+
+        if (type === 'bar') {
+            setChartType('bar');
+            document.getElementById('custom-title').value = 'Sample Bar Chart';
+            document.getElementById('custom-subtitle').value = 'Auto-filled demo showcasing labels and export';
+            document.getElementById('custom-xlabel').value = first || 'Category';
+            document.getElementById('custom-ylabel').value = second ? `Value of ${second}` : 'Count';
+        } else {
+            setChartType('heatmap');
+            document.getElementById('custom-title').value = 'Sample Heatmap';
+            document.getElementById('custom-subtitle').value = 'Demographic × Response view';
+            document.getElementById('custom-xlabel').value = first || 'Category';
+            document.getElementById('custom-ylabel').value = second || 'Group';
+        }
+
+        this.updateVisualization();
+    }
     
     updateFilterCount() {
         const total = this.dm.processedData.length;
@@ -1480,3 +1917,45 @@ class UIManager {
         display.textContent = `Showing ${filtered} of ${total} respondents`;
     }
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const colorManager = new ColorManager();
+    const statsEngine = new StatisticsEngine();
+    const dataManager = new DataManager();
+    const filterEngine = new FilterEngine(dataManager);
+    const codebookManager = new CodebookManager(dataManager);
+    const viewManager = new ViewManager(null);
+    const visualizer = new Visualizer(colorManager, statsEngine, dataManager);
+
+    um = new UIManager(dataManager, visualizer, filterEngine, codebookManager, viewManager);
+    viewManager.um = um;
+
+    filterEngine.setOnChange(() => {
+        um.updateVisualization();
+        um.updateFilterCount();
+    });
+
+    dataManager.subscribe(() => {
+        filterEngine.refreshFilterOptions();
+        um.updateFilterCount();
+    });
+
+    const loadDefaultData = async () => {
+        try {
+            const resp = await fetch('detailed_survey_data.json');
+            if (!resp.ok) return;
+
+            const json = await resp.json();
+            dataManager.rawData = json.raw_data || json;
+            if (dataManager.rawData.length > 0) {
+                dataManager.headers = Object.keys(dataManager.rawData[0]);
+                dataManager.processData();
+                um.onDataReady('detailed_survey_data.json');
+            }
+        } catch (err) {
+            console.warn('Default data load skipped', err);
+        }
+    };
+
+    await loadDefaultData();
+});
