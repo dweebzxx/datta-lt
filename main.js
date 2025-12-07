@@ -174,7 +174,7 @@ class ColorManager {
             aurora: ['#005960', '#0099A8', '#4BC0C8', '#FF7E67', '#FFC4A3', '#5B7DB1', '#3E517A', '#42B883', '#DDDDDD', '#13293D'],
             canyon: ['#FF5E5B', '#D7263D', '#F2A541', '#F7D488', '#E0E2DB', '#116979', '#87A8A4', '#B2B1B9', '#F26419', '#33658A'],
             seashore: ['#023E8A', '#0077B6', '#0096C7', '#00B4D8', '#48CAE4', '#90E0EF', '#CAF0F8', '#03045E', '#1D3557', '#457B9D'],
-            ltikes: ['#ED1C24', '#0072BC', '#FFD100', '#00A651', '#F15A24', '#EC008C', '#662D91', '#2E3192', '#00AEEF', '#8DC63F'],
+            ltikes: ['#EE3338', '#005C9F', '#FFD100', '#27A9E1', '#3CB878', '#F7941D', '#F09EA7', '#8E44AD', '#0F2C52', '#E6E7E8'],
             moss: ['#264653', '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#1B4332', '#2D6A4F', '#52B788', '#74C69D', '#D8F3DC'],
             bloom: ['#6A0572', '#AB83A1', '#C9CCD5', '#FFB5A7', '#FCD5CE', '#F8EDEB', '#9D8189', '#5C5470', '#9F86C0', '#D1D1D1'],
             mono: ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#6FFFE9', '#BFC0C0', '#8D99AE', '#2B2D42', '#EDF2F4', '#EF233C'],
@@ -886,12 +886,14 @@ class Visualizer {
 
         // Inject Custom Titles if they exist in UI but not fully in option yet (though generateOption should handle it)
         if(hasCustomTitle) {
+             const titleTextStyle = { color: this.colorManager.getTextColor(), fontSize: 18, fontWeight: 'bold' };
+             const subTitleTextStyle = { color: chroma(this.colorManager.getTextColor()).alpha(0.7).css(), fontSize: 14, fontWeight: '600' };
              option.title = {
                  text: config.customTitle || displayTitle,
                  subtext: config.customSubtitle || '',
                  left: 'center',
-                 textStyle: { color: this.colorManager.getTextColor() },
-                 subtextStyle: { color: chroma(this.colorManager.getTextColor()).alpha(0.7).css() }
+                 textStyle: titleTextStyle,
+                 subtextStyle: subTitleTextStyle
              };
             option.title.top = option.title.top || 10;
             if (option.legend) option.legend.top = hasCustomTitle ? 50 : option.legend.top;
@@ -917,7 +919,7 @@ class Visualizer {
         if (this.chartInstance) {
             const url = this.chartInstance.getDataURL({
                 type: 'png',
-                backgroundColor: document.documentElement.classList.contains('dark') ? '#1a202c' : '#ffffff'
+                backgroundColor: '#ffffff'
             });
             const a = document.createElement('a');
             a.href = url;
@@ -1322,6 +1324,9 @@ class Visualizer {
         const gridColor = this.colorManager.getGridColor();
         const animation = { universalTransition: true, animationDuration: 500 };
         const palette = this.colorManager.getPalette(10); // Default palette size
+        const axisLabelStyle = { color: textColor, fontSize: 13, fontWeight: 'bold' };
+        const axisNameStyle = { color: textColor, fontSize: 14, fontWeight: 'bold' };
+        const legendTextStyle = { color: textColor, fontSize: 13, fontWeight: 'bold' };
 
         // --- SCATTER ---
         if (chartType === 'scatter' || chartType === 'scatter-jitter') {
@@ -1337,9 +1342,9 @@ class Visualizer {
                  color: palette,
                  ...animation,
                  tooltip: { trigger: 'item' },
-                 legend: { textStyle: { color: textColor } },
-                 xAxis: { type: 'value', name: config.customXLabel || config.xAxis, nameLocation: 'middle', nameGap: 30, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
-                 yAxis: { type: 'value', name: config.customYLabel || config.yAxis, nameLocation: 'middle', nameGap: 30, axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+                 legend: { textStyle: legendTextStyle },
+                 xAxis: { type: 'value', name: config.customXLabel || config.xAxis, nameLocation: 'middle', nameGap: 30, axisLabel: { ...axisLabelStyle }, nameTextStyle: axisNameStyle, splitLine: { lineStyle: { color: gridColor } } },
+                 yAxis: { type: 'value', name: config.customYLabel || config.yAxis, nameLocation: 'middle', nameGap: 30, axisLabel: { ...axisLabelStyle }, nameTextStyle: axisNameStyle, splitLine: { lineStyle: { color: gridColor } } },
                  series: series,
                  backgroundColor: 'transparent'
              };
@@ -1352,8 +1357,8 @@ class Visualizer {
                  color: palette,
                  ...animation,
                  tooltip: { trigger: 'item', confine: true },
-                 xAxis: { type: 'category', data: axisData, axisLabel: { color: textColor }, name: config.customXLabel || config.groupBy || "Group" },
-                 yAxis: { type: 'value', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || config.xAxis || "Value" },
+                 xAxis: { type: 'category', data: axisData, axisLabel: { ...axisLabelStyle }, name: config.customXLabel || config.groupBy || "Group", nameTextStyle: axisNameStyle },
+                 yAxis: { type: 'value', axisLabel: { ...axisLabelStyle }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || config.xAxis || "Value", nameTextStyle: axisNameStyle },
                  series: [
                      {
                          name: 'boxplot',
@@ -1378,25 +1383,25 @@ class Visualizer {
                  color: palette,
                  tooltip: { position: 'top' },
                  grid: { height: '70%', bottom: '15%' },
-                 xAxis: { type: 'category', data: xArr, axisLabel: { color: textColor, rotate: 30 }, name: config.customXLabel || config.xAxis },
-                 yAxis: { type: 'category', data: yArr, axisLabel: { color: textColor }, name: config.customYLabel || (config.yAxis || config.groupBy) },
-                 visualMap: {
-                     min: 0,
-                     max: maxVal,
-                     calculable: true,
-                     orient: 'horizontal',
-                     left: 'center',
-                     bottom: '0%',
-                     textStyle: { color: textColor }
-                 },
-                 series: [{
-                     type: 'heatmap',
-                     data: seriesData,
-                     label: { show: true },
-                     itemStyle: {
-                         emphasis: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-                     }
-                 }],
+                 xAxis: { type: 'category', data: xArr, axisLabel: { ...axisLabelStyle, rotate: 30 }, name: config.customXLabel || config.xAxis, nameTextStyle: axisNameStyle },
+                 yAxis: { type: 'category', data: yArr, axisLabel: { ...axisLabelStyle }, name: config.customYLabel || (config.yAxis || config.groupBy), nameTextStyle: axisNameStyle },
+                visualMap: {
+                    min: 0,
+                    max: maxVal,
+                    calculable: true,
+                    orient: 'horizontal',
+                    left: 'center',
+                    bottom: '0%',
+                    textStyle: { color: textColor }
+                },
+                series: [{
+                    type: 'heatmap',
+                    data: seriesData,
+                    label: { show: true, color: textColor, fontWeight: 'bold' },
+                    itemStyle: {
+                        emphasis: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+                    }
+                }],
                  backgroundColor: 'transparent'
              };
         }
@@ -1406,8 +1411,8 @@ class Visualizer {
              return {
                  tooltip: { position: 'top', formatter: ({ value }) => `Correlation: ${Number(value[2]).toFixed(2)}` },
                  grid: { height: '70%', bottom: '15%' },
-                 xAxis: { type: 'category', data: labels, axisLabel: { color: textColor }, name: 'Variables' },
-                 yAxis: { type: 'category', data: labels, axisLabel: { color: textColor }, name: 'Variables' },
+                 xAxis: { type: 'category', data: labels, axisLabel: { ...axisLabelStyle }, name: 'Variables', nameTextStyle: axisNameStyle },
+                 yAxis: { type: 'category', data: labels, axisLabel: { ...axisLabelStyle }, name: 'Variables', nameTextStyle: axisNameStyle },
                  visualMap: {
                      min: -1,
                      max: 1,
@@ -1418,12 +1423,12 @@ class Visualizer {
                      textStyle: { color: textColor },
                      inRange: { color: ['#8B0000', '#ffffff', '#00429d'] }
                  },
-                 series: [{
-                     type: 'heatmap',
-                     data: matrixData,
-                     label: { show: true, formatter: ({ value }) => Number(value[2]).toFixed(2), color: textColor },
-                     emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.3)' } }
-                 }],
+                series: [{
+                    type: 'heatmap',
+                    data: matrixData,
+                    label: { show: true, formatter: ({ value }) => Number(value[2]).toFixed(2), color: textColor, fontWeight: 'bold' },
+                    emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.3)' } }
+                }],
                  backgroundColor: 'transparent'
              };
         }
@@ -1453,8 +1458,8 @@ class Visualizer {
                  color: palette,
                  ...animation,
                  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                 xAxis: { type: 'category', data: xLabels, axisLabel: { color: textColor }, name: config.customXLabel || config.xAxis },
-                 yAxis: { type: 'value', axisLabel: { color: textColor }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || "Count" },
+                 xAxis: { type: 'category', data: xLabels, axisLabel: { ...axisLabelStyle }, name: config.customXLabel || config.xAxis, nameTextStyle: axisNameStyle },
+                 yAxis: { type: 'value', axisLabel: { ...axisLabelStyle }, splitLine: { lineStyle: { color: gridColor } }, name: config.customYLabel || "Count", nameTextStyle: axisNameStyle },
                  series: [{
                      type: 'bar',
                      data: counts,
@@ -1480,8 +1485,8 @@ class Visualizer {
         const hasCustomTitle = Boolean(config.customTitle || config.customSubtitle);
 
         const axisConfig = {
-            axisLabel: { color: textColor, interval: 0, rotate: 30, hideOverlap: true },
-            nameTextStyle: { color: textColor },
+            axisLabel: { ...axisLabelStyle, interval: 0, rotate: 30, hideOverlap: true },
+            nameTextStyle: axisNameStyle,
             splitLine: { lineStyle: { color: gridColor } }
         };
 
@@ -1513,7 +1518,7 @@ class Visualizer {
                     trigger: 'item',
                     formatter: '{b}: {c} ({d}%)'
                 },
-                legend: { top: '5%', left: 'center', textStyle: { color: textColor } },
+                legend: { top: '5%', left: 'center', textStyle: legendTextStyle },
                 series: series,
                 backgroundColor: 'transparent'
             };
@@ -1556,8 +1561,8 @@ class Visualizer {
                 color: finalPalette,
                 ...animation,
                 tooltip: {},
-                legend: { data: isGrouped ? groups : [], textStyle: { color: textColor } },
-                radar: { indicator: indicators, axisName: { color: textColor }, splitLine: { lineStyle: { color: gridColor } } },
+                legend: { data: isGrouped ? groups : [], textStyle: legendTextStyle },
+                radar: { indicator: indicators, axisName: { color: textColor, fontSize: 13, fontWeight: 'bold' }, splitLine: { lineStyle: { color: gridColor } } },
                 series: series,
                 backgroundColor: 'transparent'
             };
@@ -1641,7 +1646,7 @@ class Visualizer {
                     axisPointer: { type: 'shadow' },
                     valueFormatter: (value) => is100Stacked ? value.toFixed(1) + '%' : value
                 },
-                legend: { data: isGrouped ? groups : [], textStyle: { color: textColor }, top: hasCustomTitle ? 60 : 20 },
+                legend: { data: isGrouped ? groups : [], textStyle: legendTextStyle, top: hasCustomTitle ? 60 : 20 },
                 grid: { left: '3%', right: '4%', bottom: '10%', top: hasCustomTitle ? 100 : 60, containLabel: true, borderColor: gridColor },
                 xAxis: finalXAxis,
                 yAxis: finalYAxis,
@@ -1861,6 +1866,7 @@ class UIManager {
         document.getElementById('data-summary').classList.remove('hidden');
 
         this.populateColumnSelects();
+        this.ensureDefaultAxes();
         this.fe.generateFilters();
         this.cbm.refreshColumns(this.dm.headers);
         this.updateFilterCount();
@@ -1899,6 +1905,24 @@ class UIManager {
             if (headers.includes(currentVal)) el.value = currentVal;
         });
     }
+
+    ensureDefaultAxes() {
+        const headers = this.dm.headers.filter(h => h !== '_id');
+        const [first, second] = headers;
+        const xSelect = document.getElementById('x-axis-select');
+        const ySelect = document.getElementById('y-axis-select');
+        const groupSelect = document.getElementById('group-by-select');
+
+        if (xSelect && (!xSelect.value || !headers.includes(xSelect.value))) {
+            xSelect.value = first || '';
+        }
+        if (ySelect && (!ySelect.value || !headers.includes(ySelect.value))) {
+            ySelect.value = second || '';
+        }
+        if (groupSelect && groupSelect.value && !headers.includes(groupSelect.value)) {
+            groupSelect.value = '';
+        }
+    }
     
     renderDataTable() {
         const thead = document.getElementById('raw-data-head');
@@ -1931,6 +1955,7 @@ class UIManager {
     }
 
     updateVisualization() {
+        this.ensureDefaultAxes();
         const config = {
             xAxis: document.getElementById('x-axis-select').value,
             yAxis: document.getElementById('y-axis-select').value,
