@@ -1,0 +1,12 @@
+Age,Salary,Department,Satisfaction
+25,50000,Sales,4
+30,60000,Sales,3
+35,70000,Sales,5
+40,80000,Engineering,2
+45,90000,Engineering,4
+50,100000,Engineering,5
+28,55000,Marketing,3
+32,65000,Marketing,4
+38,75000,Marketing,5
+22,40000,HR,4
+55,110000,HR,5
