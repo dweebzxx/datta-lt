@@ -360,7 +360,9 @@ class DataManager {
     
     async loadFile(file) {
         return new Promise((resolve, reject) => {
-            if (file.name.endsWith('.csv')) {
+            const fileName = file.name.toLowerCase();
+
+            if (fileName.endsWith('.csv')) {
                 Papa.parse(file, {
                     header: true,
                     skipEmptyLines: true,
@@ -372,7 +374,7 @@ class DataManager {
                     },
                     error: (err) => reject(err)
                 });
-            } else if (file.name.endsWith('.json')) {
+            } else if (fileName.endsWith('.json')) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
@@ -390,7 +392,9 @@ class DataManager {
                     } catch (err) { reject(err); }
                 };
                 reader.readAsText(file);
-            } else { reject(new Error('Unsupported file format')); }
+            } else {
+                reject(new Error('Unsupported file format'));
+            }
         });
     }
     
@@ -1843,6 +1847,9 @@ class UIManager {
 
                 } catch (err) {
                     alert(`Error: ${err.message}`);
+                } finally {
+                    // Reset to allow uploading the same file again
+                    fileInput.value = '';
                 }
             }
         });
