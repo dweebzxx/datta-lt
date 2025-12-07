@@ -868,7 +868,9 @@ class Visualizer {
 
         // Prepare Data based on chart type requirements
         let processedData;
-        if (config.chartType === 'scatter' || config.chartType === 'scatter-jitter' || config.chartType === 'heatmap' || config.chartType === 'demographic-heatmap' || config.chartType === 'correlation-heatmap' || config.chartType === 'boxplot' || config.chartType === 'sankey') {
+        if (config.multiAxisVariables?.length && this.isMultiAxisChart(config.chartType)) {
+             processedData = this.prepareMultiAxisComparison(data, config);
+        } else if (config.chartType === 'scatter' || config.chartType === 'scatter-jitter' || config.chartType === 'heatmap' || config.chartType === 'demographic-heatmap' || config.chartType === 'correlation-heatmap' || config.chartType === 'boxplot' || config.chartType === 'sankey') {
              // These types might need raw-ish data or special processing
              processedData = this.prepareSpecialData(data, config);
         } else if (config.chartType === 'histogram') {
@@ -1108,6 +1110,77 @@ class Visualizer {
             totalCount
         };
     }
+
+    isMultiAxisChart(chartType) {
+        const supported = ['side-by-side-bar', 'stacked-column', '100-stacked-column', 'horizontal-stacked', 'horizontal-100-stacked'];
+        return supported.includes(chartType);
+    }
+
+    prepareMultiAxisComparison(data, config) {
+        const variables = (config.multiAxisVariables || []).filter(Boolean).slice(0, 6);
+        if (!variables.length) {
+            return { error: 'Pick at least one variable in the multi-variable selector.' };
+        }
+
+        const { splitValues, strictMode } = config;
+        const responseBuckets = {};
+        const categories = new Set();
+        variables.forEach(v => responseBuckets[v] = {});
+
+        data.forEach(row => {
+            variables.forEach(variable => {
+                let raw = row[variable];
+                if (raw === undefined || raw === null) raw = 'N/A';
+                let values = [];
+
+                if (splitValues && typeof raw === 'string') {
+                    if (strictMode) {
+                        values = raw.split(',').map(s => s.trim());
+                    } else {
+                        if (raw.includes(';')) values = raw.split(';').map(s => s.trim());
+                        else if (raw.includes(',')) values = raw.split(',').map(s => s.trim());
+                        else values = [raw.trim()];
+                    }
+                } else {
+                    values = [String(raw).trim()];
+                }
+
+                values.forEach(val => {
+                    let mapped = val === '' ? 'N/A' : val;
+                    if (this.dm.codebook.mapping[variable] && this.dm.codebook.mapping[variable][mapped]) {
+                        mapped = this.dm.codebook.mapping[variable][mapped];
+                    }
+                    categories.add(mapped);
+                    responseBuckets[variable][mapped] = (responseBuckets[variable][mapped] || 0) + 1;
+                });
+            });
+        });
+
+        const categoryList = Array.from(categories).sort();
+        const totalsPerCategory = categoryList.map(cat => variables.reduce((sum, v) => sum + (responseBuckets[v][cat] || 0), 0));
+        const isPercentage = config.chartType.includes('100');
+
+        const series = variables.map(variable => {
+            const dataPoints = categoryList.map((cat, idx) => {
+                const rawVal = responseBuckets[variable][cat] || 0;
+                if (isPercentage) {
+                    const total = totalsPerCategory[idx] || 0;
+                    return total > 0 ? (rawVal / total) * 100 : 0;
+                }
+                return rawVal;
+            });
+
+            return {
+                name: variable,
+                type: 'bar',
+                stack: config.chartType.includes('stacked') ? 'total' : undefined,
+                data: dataPoints,
+                itemStyle: { borderRadius: 3 }
+            };
+        });
+
+        return { categories: categoryList, series, isPercentage, multiSeriesMode: true };
+    }
     
     // Preparation methods for new chart types
     prepareSpecialData(data, config) {
@@ -1327,7 +1400,7 @@ class Visualizer {
 
     generateOption(processed, config) {
         const { chartType } = config;
-        
+
         // Handle new types
         const textColor = this.colorManager.getTextColor();
         const gridColor = this.colorManager.getGridColor();
@@ -1342,6 +1415,50 @@ class Visualizer {
         const axisNameStyle = { color: textColor, fontSize: config.axisTitleFontSize || 14, fontWeight: 'bold' };
         const axisTitleGap = config.axisTitleGap ?? 30;
         const legendTextStyle = { color: textColor, fontSize: 13, fontWeight: 'bold' };
+        const hasCustomTitle = Boolean(config.customTitle || config.customSubtitle);
+
+        if (processed && processed.multiSeriesMode) {
+            const isHorizontal = chartType.includes('horizontal');
+            const is100Stacked = chartType.includes('100');
+            const finalPalette = this.colorManager.getPalette(processed.series.length);
+
+            processed.series.forEach((s, idx) => {
+                s.color = finalPalette[idx];
+                s.emphasis = { focus: 'series' };
+            });
+
+            let categoryAxis = { type: 'category', data: processed.categories, axisLabel: { ...axisLabelStyle, rotate: isHorizontal ? 0 : 30, hideOverlap: true }, nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' };
+            let valueAxis = { type: 'value', axisLabel: { ...axisLabelStyle, rotate: 0 }, splitLine: { lineStyle: { color: gridColor } }, nameTextStyle: axisNameStyle, nameGap: axisTitleGap, nameLocation: 'middle' };
+
+            const categoryName = config.customXLabel || 'Response Options';
+            const valueName = config.customYLabel || (is100Stacked ? 'Percentage' : 'Count');
+
+            if (isHorizontal) {
+                categoryAxis = { ...categoryAxis, name: config.customYLabel || categoryName };
+                valueAxis = { ...valueAxis, name: config.customXLabel || valueName };
+            } else {
+                categoryAxis = { ...categoryAxis, name: categoryName };
+                valueAxis = { ...valueAxis, name: valueName };
+            }
+
+            const option = {
+                color: finalPalette,
+                ...animation,
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    valueFormatter: (value) => is100Stacked ? `${value.toFixed(1)}%` : value
+                },
+                legend: { textStyle: legendTextStyle, top: hasCustomTitle ? 60 : 20 },
+                grid: { left: '3%', right: '4%', bottom: '10%', top: hasCustomTitle ? 100 : 60, containLabel: true, borderColor: gridColor },
+                xAxis: isHorizontal ? valueAxis : categoryAxis,
+                yAxis: isHorizontal ? categoryAxis : valueAxis,
+                series: processed.series,
+                backgroundColor: 'transparent'
+            };
+
+            return option;
+        }
 
         // --- SCATTER ---
         if (chartType === 'scatter' || chartType === 'scatter-jitter') {
@@ -1496,7 +1613,7 @@ class Visualizer {
         // For this iteration, map diverging-bar to a stacked bar with specific stacking.
         
         const isDiverging = chartType === 'diverging-bar';
-        const isHorizontal = chartType === 'bar-horizontal' || isDiverging; // Diverging usually horizontal
+        const isHorizontal = chartType === 'bar-horizontal' || chartType.includes('horizontal') || isDiverging; // Diverging usually horizontal
         const hasCustomTitle = Boolean(config.customTitle || config.customSubtitle);
 
         const axisConfig = {
@@ -1628,7 +1745,7 @@ class Visualizer {
                 });
             });
 
-            const is100Stacked = chartType === '100-stacked-column';
+            const is100Stacked = chartType.includes('100-stacked');
             
             // X and Y Axis setup
             let finalXAxis = { type: 'category', data: xValues, ...axisConfig };
@@ -1737,6 +1854,15 @@ class UIManager {
             this.yAxisManuallySet = true;
             updateViz();
         });
+        const multiAxisSelect = document.getElementById('multi-axis-select');
+        if (multiAxisSelect) {
+            multiAxisSelect.addEventListener('change', () => {
+                if (multiAxisSelect.selectedOptions.length > 6) {
+                    alert('You can compare up to 6 variables at a time. Showing the first 6 selected.');
+                }
+                updateViz();
+            });
+        }
         document.getElementById('group-by-select').addEventListener('change', updateViz);
         document.getElementById('split-values').addEventListener('change', updateViz);
         document.getElementById('strict-mode').addEventListener('change', updateViz);
@@ -1835,9 +1961,12 @@ class UIManager {
     }
 
     resetVisualizer() {
-        ['x-axis-select', 'y-axis-select', 'group-by-select'].forEach(id => {
+        ['x-axis-select', 'y-axis-select', 'group-by-select', 'multi-axis-select'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
+            if (el && el.multiple) {
+                Array.from(el.options).forEach(opt => opt.selected = false);
+            }
         });
 
         this.yAxisManuallySet = false;
@@ -1930,18 +2059,25 @@ class UIManager {
     
     populateColumnSelects() {
         const headers = this.dm.headers;
-        const selects = ['x-axis-select', 'y-axis-select', 'group-by-select', 'map-column-select'];
+        const selects = ['x-axis-select', 'y-axis-select', 'group-by-select', 'map-column-select', 'multi-axis-select'];
         selects.forEach(id => {
             const el = document.getElementById(id);
-            const currentVal = el.value;
-            while (el.options.length > 1) el.remove(1);
+            const currentVal = el.multiple ? Array.from(el.selectedOptions).map(opt => opt.value) : el.value;
+            const keepFirst = 1;
+            while (el.options.length > keepFirst) el.remove(keepFirst);
             headers.forEach(h => {
                 const option = document.createElement('option');
                 option.value = h;
                 option.text = h;
                 el.add(option);
             });
-            if (headers.includes(currentVal)) el.value = currentVal;
+            if (el.multiple) {
+                Array.from(el.options).forEach(opt => {
+                    if (currentVal && Array.isArray(currentVal) && currentVal.includes(opt.value)) {
+                        opt.selected = true;
+                    }
+                });
+            } else if (headers.includes(currentVal)) el.value = currentVal;
         });
     }
 
@@ -2006,6 +2142,8 @@ class UIManager {
             return Number.isFinite(parsed) ? parsed : fallback;
         };
         const activeChartBtn = document.querySelector('.chart-type-btn.btn-active');
+        const multiAxisSelect = document.getElementById('multi-axis-select');
+        const selectedMulti = multiAxisSelect ? Array.from(multiAxisSelect.selectedOptions).map(opt => opt.value).filter(Boolean).slice(0, 6) : [];
         const config = {
             xAxis: document.getElementById('x-axis-select').value,
             yAxis: document.getElementById('y-axis-select').value,
@@ -2013,6 +2151,7 @@ class UIManager {
             splitValues: document.getElementById('split-values').checked,
             strictMode: document.getElementById('strict-mode').checked,
             chartType: activeChartBtn ? activeChartBtn.dataset.type : 'bar',
+            multiAxisVariables: selectedMulti,
 
             // Custom Labels
             customTitle: document.getElementById('custom-title').value,
@@ -2029,7 +2168,7 @@ class UIManager {
             axisLabelMargin: getNumber('axis-label-margin', 8),
             pieLabelFontSize: getNumber('pie-label-font-size', 13)
         };
-        if (config.xAxis) {
+        if (config.xAxis || config.multiAxisVariables.length) {
             this.viz.render(this.dm.filteredData, config);
         }
     }
