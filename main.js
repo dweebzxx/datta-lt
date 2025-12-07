@@ -1618,7 +1618,6 @@ class Visualizer {
         
         const isDiverging = chartType === 'diverging-bar';
         const isHorizontal = chartType === 'bar-horizontal' || chartType.includes('horizontal') || isDiverging; // Diverging usually horizontal
-        const hasCustomTitle = Boolean(config.customTitle || config.customSubtitle);
 
         const axisConfig = {
             axisLabel: { ...axisLabelStyle, interval: 0, rotate: 30, hideOverlap: true },
