@@ -1705,6 +1705,7 @@ class UIManager {
         this.fe = filterEngine;
         this.cbm = codebookManager;
         this.vm = viewManager;
+        this.yAxisManuallySet = false;
         this.initEventListeners();
     }
     initEventListeners() {
@@ -1732,7 +1733,10 @@ class UIManager {
         const updateViz = () => this.updateVisualization();
 
         document.getElementById('x-axis-select').addEventListener('change', updateViz);
-        document.getElementById('y-axis-select').addEventListener('change', updateViz);
+        document.getElementById('y-axis-select').addEventListener('change', () => {
+            this.yAxisManuallySet = true;
+            updateViz();
+        });
         document.getElementById('group-by-select').addEventListener('change', updateViz);
         document.getElementById('split-values').addEventListener('change', updateViz);
         document.getElementById('strict-mode').addEventListener('change', updateViz);
@@ -1836,6 +1840,8 @@ class UIManager {
             if (el) el.value = '';
         });
 
+        this.yAxisManuallySet = false;
+
         document.getElementById('split-values').checked = false;
         document.getElementById('strict-mode').checked = false;
         document.getElementById('hide-self-comparison').checked = true;
@@ -1892,6 +1898,7 @@ class UIManager {
     }
 
     onDataReady(label = 'Data') {
+        this.yAxisManuallySet = false;
         document.getElementById('file-name-display').textContent = label;
         document.getElementById('row-count-display').textContent = `${this.dm.rawData.length} rows`;
         document.getElementById('data-summary').classList.remove('hidden');
@@ -1947,8 +1954,13 @@ class UIManager {
         if (xSelect && (!xSelect.value || !headers.includes(xSelect.value))) {
             xSelect.value = first || '';
         }
-        if (ySelect && (!ySelect.value || !headers.includes(ySelect.value))) {
-            ySelect.value = second || '';
+        if (ySelect) {
+            const hasValidYAxis = headers.includes(ySelect.value);
+            if ((!ySelect.value || !hasValidYAxis) && !this.yAxisManuallySet) {
+                ySelect.value = second || '';
+            } else if (ySelect.value && !hasValidYAxis) {
+                ySelect.value = '';
+            }
         }
         if (groupSelect && groupSelect.value && !headers.includes(groupSelect.value)) {
             groupSelect.value = '';
