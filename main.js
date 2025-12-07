@@ -1524,7 +1524,7 @@ class Visualizer {
                 radius: chartType === 'donut' ? ['40%', '70%'] : '50%',
                 data: data,
                 emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } },
-                label: { color: textColor, formatter: '{b}: {d}%' }
+                label: { color: textColor, formatter: '{b}: {d}%', fontSize: config.pieLabelFontSize || 13 }
             });
             return {
                 color: finalPalette,
@@ -1743,7 +1743,7 @@ class UIManager {
         document.getElementById('hide-self-comparison').addEventListener('change', updateViz);
         
         // Label Inputs Triggers
-        ['custom-title', 'custom-subtitle', 'custom-xlabel', 'custom-ylabel', 'title-font-size', 'subtitle-font-size', 'title-left', 'title-offset-y', 'axis-title-font-size', 'axis-label-font-size', 'axis-title-gap', 'axis-label-margin'].forEach(id => {
+        ['custom-title', 'custom-subtitle', 'custom-xlabel', 'custom-ylabel', 'title-font-size', 'subtitle-font-size', 'title-left', 'title-offset-y', 'axis-title-font-size', 'axis-label-font-size', 'axis-title-gap', 'axis-label-margin', 'pie-label-font-size'].forEach(id => {
             document.getElementById(id).addEventListener('input', updateViz);
         });
 
@@ -1858,7 +1858,8 @@ class UIManager {
             'axis-title-font-size': 14,
             'axis-label-font-size': 13,
             'axis-title-gap': 30,
-            'axis-label-margin': 8
+            'axis-label-margin': 8,
+            'pie-label-font-size': 13
         };
         Object.entries(numericDefaults).forEach(([id, value]) => {
             const input = document.getElementById(id);
@@ -2025,7 +2026,8 @@ class UIManager {
             axisTitleFontSize: getNumber('axis-title-font-size', 14),
             axisLabelFontSize: getNumber('axis-label-font-size', 13),
             axisTitleGap: getNumber('axis-title-gap', 30),
-            axisLabelMargin: getNumber('axis-label-margin', 8)
+            axisLabelMargin: getNumber('axis-label-margin', 8),
+            pieLabelFontSize: getNumber('pie-label-font-size', 13)
         };
         if (config.xAxis) {
             this.viz.render(this.dm.filteredData, config);
