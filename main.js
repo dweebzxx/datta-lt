@@ -174,7 +174,7 @@ class ColorManager {
             aurora: ['#005960', '#0099A8', '#4BC0C8', '#FF7E67', '#FFC4A3', '#5B7DB1', '#3E517A', '#42B883', '#DDDDDD', '#13293D'],
             canyon: ['#FF5E5B', '#D7263D', '#F2A541', '#F7D488', '#E0E2DB', '#116979', '#87A8A4', '#B2B1B9', '#F26419', '#33658A'],
             seashore: ['#023E8A', '#0077B6', '#0096C7', '#00B4D8', '#48CAE4', '#90E0EF', '#CAF0F8', '#03045E', '#1D3557', '#457B9D'],
-            citrus: ['#003049', '#D62828', '#F77F00', '#FCBF49', '#EAE2B7', '#F0803C', '#FFB238', '#FF7F51', '#A53860', '#450920'],
+            ltikes: ['#ED1C24', '#0072BC', '#FFD100', '#00A651', '#F15A24', '#EC008C', '#662D91', '#2E3192', '#00AEEF', '#8DC63F'],
             moss: ['#264653', '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#1B4332', '#2D6A4F', '#52B788', '#74C69D', '#D8F3DC'],
             bloom: ['#6A0572', '#AB83A1', '#C9CCD5', '#FFB5A7', '#FCD5CE', '#F8EDEB', '#9D8189', '#5C5470', '#9F86C0', '#D1D1D1'],
             mono: ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#6FFFE9', '#BFC0C0', '#8D99AE', '#2B2D42', '#EDF2F4', '#EF233C'],
@@ -182,8 +182,10 @@ class ColorManager {
             pastelpunch: ['#F72585', '#B5179E', '#7209B7', '#560BAD', '#480CA8', '#3A0CA3', '#3F37C9', '#4361EE', '#4895EF', '#4CC9F0'],
             midnight: ['#0B3954', '#087E8B', '#FF5A5F', '#00A6A6', '#B8B08D', '#F18F01', '#C5D86D', '#9CAFB7', '#6F1D1B', '#FFD166']
         };
-        this.activeTheme = localStorage.getItem('activeTheme') || 'aurora';
+        const storedTheme = localStorage.getItem('activeTheme');
+        this.activeTheme = this.themes[storedTheme] ? storedTheme : 'aurora';
         this.systemDefaults = this.themes[this.activeTheme];
+        localStorage.setItem('activeTheme', this.activeTheme);
         this.customColors = [];
         this.paletteListeners = [];
         this.init();
@@ -259,6 +261,7 @@ class ColorManager {
     }
 
     applyThemeToInputs() {
+        if (!this.systemDefaults) this.systemDefaults = this.themes['aurora'];
         const inputs = document.querySelectorAll('.color-input');
         inputs.forEach((input, i) => {
             input.value = this.systemDefaults[i] || '';
@@ -819,7 +822,8 @@ class Visualizer {
                 series: [{
                     type: 'bar',
                     data: values,
-                    itemStyle: { borderRadius: 2 }
+                    itemStyle: { borderRadius: 2 },
+                    colorBy: 'data'
                 }]
             };
         }
@@ -830,6 +834,7 @@ class Visualizer {
     render(data, config) {
         const chartDom = document.getElementById('main-chart');
         const titleEl = document.getElementById('chart-title');
+        const hasCustomTitle = Boolean(config.customTitle || config.customSubtitle);
         
         // Hide Self-Comparison Logic
         if (document.getElementById('hide-self-comparison').checked && config.xAxis && config.xAxis === config.groupBy) {
@@ -878,9 +883,9 @@ class Visualizer {
         }
 
         const option = this.generateOption(processedData, config);
-        
+
         // Inject Custom Titles if they exist in UI but not fully in option yet (though generateOption should handle it)
-        if(config.customTitle || config.customSubtitle) {
+        if(hasCustomTitle) {
              option.title = {
                  text: config.customTitle || displayTitle,
                  subtext: config.customSubtitle || '',
@@ -888,6 +893,9 @@ class Visualizer {
                  textStyle: { color: this.colorManager.getTextColor() },
                  subtextStyle: { color: chroma(this.colorManager.getTextColor()).alpha(0.7).css() }
              };
+            option.title.top = option.title.top || 10;
+            if (option.legend) option.legend.top = hasCustomTitle ? 50 : option.legend.top;
+            if (option.grid) option.grid.top = hasCustomTitle ? 90 : option.grid.top;
         }
 
         this.chartInstance.setOption(option);
@@ -1469,9 +1477,10 @@ class Visualizer {
         
         const isDiverging = chartType === 'diverging-bar';
         const isHorizontal = chartType === 'bar-horizontal' || isDiverging; // Diverging usually horizontal
-        
+        const hasCustomTitle = Boolean(config.customTitle || config.customSubtitle);
+
         const axisConfig = {
-            axisLabel: { color: textColor, interval: 0, rotate: 30 },
+            axisLabel: { color: textColor, interval: 0, rotate: 30, hideOverlap: true },
             nameTextStyle: { color: textColor },
             splitLine: { lineStyle: { color: gridColor } }
         };
@@ -1563,7 +1572,7 @@ class Visualizer {
                 let type = 'bar';
                 let stack = undefined;
                 let areaStyle = undefined;
-                
+
                 if (chartType === 'line' || chartType === 'area' || chartType === 'slope') {
                     type = 'line';
                     if (chartType === 'area') areaStyle = {};
@@ -1586,25 +1595,33 @@ class Visualizer {
                 } else if (isHorizontal) {
                     type = 'bar';
                 }
+                const useDataColoring = !isGrouped && type === 'bar';
                 const finalData = isDiverging ? data.map(v => v * (groupIndex % 2 === 0 ? 1 : -1)) : data;
                 series.push({
                     name: isGrouped ? g : config.yAxis || 'Count',
                     type: type,
                     stack: stack,
                     areaStyle: areaStyle,
-                    data: finalData
+                    data: finalData,
+                    colorBy: useDataColoring ? 'data' : 'series',
+                    itemStyle: type === 'bar' ? { borderRadius: 3 } : undefined
                 });
             });
-            
+
             const is100Stacked = chartType === '100-stacked-column';
             
             // X and Y Axis setup
             let finalXAxis = { type: 'category', data: xValues, ...axisConfig };
             let finalYAxis = { type: 'value', ...axisConfig };
-            
+
             if (isHorizontal) {
                 finalXAxis = { type: 'value', ...axisConfig };
                 finalYAxis = { type: 'category', data: xValues, ...axisConfig };
+            }
+
+            if (isHorizontal) {
+                finalXAxis.axisLabel = { ...finalXAxis.axisLabel, rotate: 0 };
+                finalYAxis.axisLabel = { ...finalYAxis.axisLabel, rotate: 0 };
             }
             
             // Inject Custom Labels if not default
@@ -1624,8 +1641,8 @@ class Visualizer {
                     axisPointer: { type: 'shadow' },
                     valueFormatter: (value) => is100Stacked ? value.toFixed(1) + '%' : value
                 },
-                legend: { data: isGrouped ? groups : [], textStyle: { color: textColor } },
-                grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true, borderColor: gridColor },
+                legend: { data: isGrouped ? groups : [], textStyle: { color: textColor }, top: hasCustomTitle ? 60 : 20 },
+                grid: { left: '3%', right: '4%', bottom: '10%', top: hasCustomTitle ? 100 : 60, containLabel: true, borderColor: gridColor },
                 xAxis: finalXAxis,
                 yAxis: finalYAxis,
                 series: series,
@@ -1674,6 +1691,8 @@ class UIManager {
         const fileInput = document.getElementById('file-upload');
         const fileInfo = document.getElementById('file-name-display');
 
+        this.initializeCollapsibles();
+
         this.viz.colorManager.onPaletteChange(() => this.updateVisualization());
         
         fileInput.addEventListener('change', async (e) => {
@@ -1704,16 +1723,6 @@ class UIManager {
             document.getElementById(id).addEventListener('input', updateViz);
         });
 
-        // Toggle Labels Section
-        document.getElementById('toggle-labels-section').addEventListener('click', () => {
-            const content = document.getElementById('labels-section-content');
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-            } else {
-                content.classList.add('hidden');
-            }
-        });
-        
         document.querySelectorAll('.chart-type-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('btn-active'));
@@ -1721,6 +1730,8 @@ class UIManager {
                 this.updateVisualization();
             });
         });
+
+        document.getElementById('btn-reset-visualizer').addEventListener('click', () => this.resetVisualizer());
 
         document.getElementById('btn-demo-bar').addEventListener('click', () => this.applyDemoPreset('bar'));
         document.getElementById('btn-demo-heatmap').addEventListener('click', () => this.applyDemoPreset('heatmap'));
@@ -1764,16 +1775,84 @@ class UIManager {
              this.viz.downloadChart();
          });
          
-         // Notes
-         const notesArea = document.getElementById('chart-notes');
-         notesArea.addEventListener('input', (e) => {
-             const col = document.getElementById('x-axis-select').value;
-             if(col) {
+        // Notes
+        const notesArea = document.getElementById('chart-notes');
+        notesArea.addEventListener('input', (e) => {
+            const col = document.getElementById('x-axis-select').value;
+            if(col) {
                  const notes = JSON.parse(localStorage.getItem('chartNotes') || '{}');
                  notes[col] = e.target.value;
-                 localStorage.setItem('chartNotes', JSON.stringify(notes));
-             }
-         });
+                localStorage.setItem('chartNotes', JSON.stringify(notes));
+            }
+        });
+    }
+
+    initializeCollapsibles() {
+        document.querySelectorAll('.section-toggle').forEach(toggle => {
+            const targetId = toggle.dataset.target;
+            const target = document.getElementById(targetId);
+            const icon = toggle.querySelector('svg');
+            if (!target) return;
+
+            const setState = (expanded) => {
+                toggle.setAttribute('aria-expanded', expanded);
+                target.classList.toggle('hidden', !expanded);
+                if (icon) icon.classList.toggle('-rotate-90', !expanded);
+            };
+
+            const initialExpanded = toggle.getAttribute('aria-expanded') !== 'false';
+            setState(initialExpanded);
+
+            toggle.addEventListener('click', () => {
+                const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+                setState(!isExpanded);
+            });
+        });
+    }
+
+    resetVisualizer() {
+        ['x-axis-select', 'y-axis-select', 'group-by-select'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
+        document.getElementById('split-values').checked = false;
+        document.getElementById('strict-mode').checked = false;
+        document.getElementById('hide-self-comparison').checked = true;
+
+        ['custom-title', 'custom-subtitle', 'custom-xlabel', 'custom-ylabel'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.value = '';
+        });
+
+        document.querySelectorAll('.chart-type-btn').forEach(btn => btn.classList.remove('btn-active'));
+        const defaultChart = document.querySelector('.chart-type-btn[data-type="bar"]');
+        if (defaultChart) defaultChart.classList.add('btn-active');
+
+        const themeSelect = document.getElementById('color-theme-select');
+        if (themeSelect) {
+            themeSelect.value = 'aurora';
+            this.viz.colorManager.setTheme('aurora');
+            this.viz.colorManager.notifyPaletteChange();
+        }
+
+        this.viz.colorManager.customColors = [];
+        localStorage.removeItem('customColors');
+        this.viz.colorManager.applyThemeToInputs();
+
+        const chartDom = document.getElementById('main-chart');
+        if (this.viz.chartInstance) {
+            this.viz.chartInstance.dispose();
+            this.viz.chartInstance = null;
+        }
+        if (chartDom) chartDom.innerHTML = '';
+        const titleEl = document.getElementById('chart-title');
+        if (titleEl) titleEl.textContent = '';
+
+        const viewVizBtn = document.getElementById('view-mode-viz');
+        if (viewVizBtn) viewVizBtn.click();
+
+        this.updateVisualization();
     }
 
     onDataReady(label = 'Data') {
