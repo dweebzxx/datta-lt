@@ -229,24 +229,30 @@
             <div class="p-3 space-y-4 flex-1 text-sm">
                 <!-- Data View Toggle -->
                 <section>
-                    <div class="flex p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                        <button id="view-mode-viz" class="flex-1 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-all">Visualizer</button>
-                        <button id="view-mode-data" class="flex-1 py-1.5 text-xs font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 transition-all text-gray-500 dark:text-gray-300">Data Table</button>
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex flex-1 p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                            <button id="view-mode-viz" class="flex-1 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-gray-600 shadow-sm transition-all">Visualizer</button>
+                            <button id="view-mode-data" class="flex-1 py-1.5 text-xs font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 transition-all text-gray-500 dark:text-gray-300">Data Table</button>
+                        </div>
+                        <button id="btn-reset-visualizer" class="px-2 py-1 text-[11px] border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition">Reset</button>
                     </div>
                 </section>
 
                 <!-- Mapping -->
-                <section id="config-section">
-                    <h3 class="text-xs font-semibold uppercase tracking-wider mb-2 opacity-70">Configuration</h3>
-                    
-                    <div class="space-y-3">
+                <section id="config-section" class="collapsible-section">
+                    <button class="section-toggle flex justify-between items-center w-full text-xs font-semibold uppercase tracking-wider mb-2 opacity-70 hover:opacity-100" data-target="config-section-content" aria-expanded="true">
+                        <span>Configuration</span>
+                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <div id="config-section-content" class="space-y-3 collapsible-content">
                         <div>
                             <label class="block text-xs mb-1 font-medium">X-Axis / Variable 1</label>
                             <select id="x-axis-select" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
                                 <option value="">Select...</option>
                             </select>
                         </div>
-                        
+
                         <div>
                             <label class="block text-xs mb-1 font-medium">Y-Axis / Variable 2 (Opt)</label>
                             <select id="y-axis-select" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
@@ -261,22 +267,6 @@
                             </select>
                         </div>
 
-                        <!-- Labels Configuration -->
-                        <div class="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                            <button id="toggle-labels-section" class="flex justify-between items-center w-full text-xs font-semibold uppercase tracking-wider mb-2 opacity-70 hover:opacity-100">
-                                <span>Labels & Text</span>
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
-                            <div id="labels-section-content" class="hidden space-y-2">
-                                <input id="custom-title" type="text" placeholder="Chart Title" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
-                                <input id="custom-subtitle" type="text" placeholder="Sub-title" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
-                                <div class="grid grid-cols-2 gap-2">
-                                    <input id="custom-xlabel" type="text" placeholder="X-Axis Label" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
-                                    <input id="custom-ylabel" type="text" placeholder="Y-Axis Label" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="space-y-2 pt-2">
                             <div class="flex items-center">
                                 <input id="split-values" type="checkbox" class="w-3 h-3 rounded text-blue-600 focus:ring-blue-500">
@@ -294,10 +284,29 @@
                     </div>
                 </section>
 
+                <!-- Labels & Text -->
+                <section id="labels-section" class="collapsible-section">
+                    <button class="section-toggle flex justify-between items-center w-full text-xs font-semibold uppercase tracking-wider mb-2 opacity-70 hover:opacity-100" data-target="labels-section-content" aria-expanded="true">
+                        <span>Labels & Text</span>
+                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="labels-section-content" class="space-y-2 collapsible-content">
+                        <input id="custom-title" type="text" placeholder="Chart Title" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                        <input id="custom-subtitle" type="text" placeholder="Sub-title" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input id="custom-xlabel" type="text" placeholder="X-Axis Label" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            <input id="custom-ylabel" type="text" placeholder="Y-Axis Label" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Chart Type -->
-                <section id="viz-type-section">
-                    <h3 class="text-xs font-semibold uppercase tracking-wider mb-2 opacity-70">Visualization</h3>
-                    <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                <section id="viz-type-section" class="collapsible-section">
+                    <button class="section-toggle flex justify-between items-center w-full text-xs font-semibold uppercase tracking-wider mb-2 opacity-70 hover:opacity-100" data-target="viz-type-section-content" aria-expanded="true">
+                        <span>Visualization</span>
+                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="viz-type-section-content" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar collapsible-content">
                         <button class="chart-type-btn btn-outline btn-active px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="bar">Vertical Bar</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="bar-horizontal">Horizontal Bar</button>
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium text-left truncate" data-type="grouped-bar">Grouped Bar</button>
@@ -328,47 +337,52 @@
                         <button class="chart-type-btn btn-outline px-2 py-1.5 rounded text-xs font-medium col-span-2 text-center" data-type="crosstab">Crosstab Table</button>
                     </div>
                 </section>
-                
+
                 <!-- Appearance (Simplified) -->
-                <section id="theme-section">
-                     <h3 class="text-xs font-semibold uppercase tracking-wider mb-2 opacity-70">Theme</h3>
-                     <div class="mb-2 space-y-1">
-                        <label class="block text-[11px] font-semibold">Color Theme (10 curated palettes)</label>
-                        <select id="color-theme-select" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="aurora">Aurora (Default)</option>
-                            <option value="canyon">Canyon</option>
-                            <option value="seashore">Seashore</option>
-                            <option value="citrus">Citrus</option>
-                            <option value="moss">Moss</option>
-                            <option value="bloom">Bloom</option>
-                            <option value="mono">Monotone</option>
-                            <option value="jewel">Jewel</option>
-                            <option value="pastelpunch">Pastel Punch</option>
-                            <option value="midnight">Midnight</option>
-                        </select>
-                     </div>
-                     <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs">Custom Palette</span>
-                        <button id="btn-shuffle-colors" class="text-[10px] text-blue-500 hover:text-blue-700">Shuffle</button>
-                     </div>
-                     <div class="grid grid-cols-5 gap-1 mb-2" id="color-inputs">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center" aria-label="Color 1">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
-                            <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center" aria-label="Color 10">
-                     </div>
-                     <div class="flex items-center justify-between text-[11px] bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700 rounded p-2">
-                        <span class="font-semibold">Quick Demos</span>
-                        <div class="space-x-1">
-                            <button id="btn-demo-bar" class="px-2 py-1 rounded border text-[11px]">Sample Bar</button>
-                            <button id="btn-demo-heatmap" class="px-2 py-1 rounded border text-[11px]">Sample Heatmap</button>
-                        </div>
+                <section id="theme-section" class="collapsible-section">
+                     <button class="section-toggle flex justify-between items-center w-full text-xs font-semibold uppercase tracking-wider mb-2 opacity-70 hover:opacity-100" data-target="theme-section-content" aria-expanded="true">
+                        <span>Theme</span>
+                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                     </button>
+                     <div id="theme-section-content" class="collapsible-content">
+                         <div class="mb-2 space-y-1">
+                            <label class="block text-[11px] font-semibold">Color Theme (10 curated palettes)</label>
+                            <select id="color-theme-select" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="aurora">Aurora (Default)</option>
+                                <option value="canyon">Canyon</option>
+                                <option value="seashore">Seashore</option>
+                                <option value="ltikes">LTikes</option>
+                                <option value="moss">Moss</option>
+                                <option value="bloom">Bloom</option>
+                                <option value="mono">Monotone</option>
+                                <option value="jewel">Jewel</option>
+                                <option value="pastelpunch">Pastel Punch</option>
+                                <option value="midnight">Midnight</option>
+                            </select>
+                         </div>
+                         <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs">Custom Palette</span>
+                            <button id="btn-shuffle-colors" class="text-[10px] text-blue-500 hover:text-blue-700">Shuffle</button>
+                         </div>
+                         <div class="grid grid-cols-5 gap-1 mb-2" id="color-inputs">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center" aria-label="Color 1">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center">
+                                <input type="text" placeholder="#" class="color-input w-full p-1 text-[10px] border rounded text-center" aria-label="Color 10">
+                         </div>
+                         <div class="flex items-center justify-between text-[11px] bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700 rounded p-2">
+                            <span class="font-semibold">Quick Demos</span>
+                            <div class="space-x-1">
+                                <button id="btn-demo-bar" class="px-2 py-1 rounded border text-[11px]">Sample Bar</button>
+                                <button id="btn-demo-heatmap" class="px-2 py-1 rounded border text-[11px]">Sample Heatmap</button>
+                            </div>
+                         </div>
                      </div>
                 </section>
             </div>
