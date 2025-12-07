@@ -294,8 +294,48 @@
                         <input id="custom-title" type="text" placeholder="Chart Title" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
                         <input id="custom-subtitle" type="text" placeholder="Sub-title" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
                         <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Title Size</label>
+                                <input id="title-font-size" type="number" value="18" min="8" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Subtitle Size</label>
+                                <input id="subtitle-font-size" type="number" value="14" min="8" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Title Horizontal Position</label>
+                                <input id="title-left" type="text" value="center" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none" placeholder="center or 20%">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Title Vertical Offset (px)</label>
+                                <input id="title-offset-y" type="number" value="0" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
                             <input id="custom-xlabel" type="text" placeholder="X-Axis Label" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
                             <input id="custom-ylabel" type="text" placeholder="Y-Axis Label" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Axis Title Size</label>
+                                <input id="axis-title-font-size" type="number" value="14" min="8" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Axis Label Size</label>
+                                <input id="axis-label-font-size" type="number" value="13" min="8" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Axis Title Gap (px)</label>
+                                <input id="axis-title-gap" type="number" value="30" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold mb-1">Axis Label Margin (px)</label>
+                                <input id="axis-label-margin" type="number" value="8" class="w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded p-1.5 text-xs outline-none">
+                            </div>
                         </div>
                     </div>
                 </section>
